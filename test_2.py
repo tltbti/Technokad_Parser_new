@@ -83,7 +83,7 @@ def new_file_name(path_to_file: str, new_name_with_extension: str) -> str:
     :param path_to_file: path to file
     :param new_name_with_extension: file mask with extension will be added to end of filename
     :return: full path to file in string
-    example new_file_name("D:\!Python_test\!Ready\Parser for technokad\coord.txt", "_2.csv") ->
+    example new_file_name("D:\!Python_test\!Ready\Parser for technokad\coord.txt", "_2.csv")\n
     -> "D:\!Python_test\!Ready\Parser for technokad\coord_2.csv"
     """
     old_file_name = os.path.basename(path_to_file)
