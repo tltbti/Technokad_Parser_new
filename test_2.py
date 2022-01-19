@@ -1,4 +1,5 @@
 import csv
+import os.path
 
 file = r"D:\!Python_test\!Ready\Parser for technokad\coord.txt"
 
@@ -68,8 +69,27 @@ class MyRow:
         return f"{self.number};{self.name};{self.coord_x};{self.coord_y};{self.contour};{self.type}"
 
     @property
-    def get_blank_str(self) -> list():
+    def get_semicolon_string(self) -> str:
+        return ";".join(['' for value in self.__dict__.values()])
+
+    @property
+    def get_blank_str(self) -> list:
         return ['' for value in self.__dict__.values()]
+
+
+def new_file_name(path_to_file: str, new_name_with_extension: str) -> str:
+    """
+    :param path_to_file: path to file
+    :param new_name_with_extension: file mask with extension will be added to end of filename
+    :return: full path to file in string
+    example new_file_name("D:\!Python_test\!Ready\Parser for technokad\coord.txt", "_2.csv") ->
+    -> "D:\!Python_test\!Ready\Parser for technokad\coord_2.csv"
+    """
+    old_file_name = os.path.basename(path_to_file)
+    old_file_name_without_extension = old_file_name.split(".")[0]
+    new_name = old_file_name_without_extension + new_name_with_extension
+    parent_dir = os.path.dirname(path_to_file)
+    return os.path.join(parent_dir, new_name)
 
 
 def read_from_file_to_list(path_to_file: str = file, skip_first_row: bool = True) -> [object]:
@@ -107,20 +127,27 @@ def insert_blank_list(data_list: [object]) -> list:
             current_contour = row.contour
     return data_list
 
+
 r = read_from_file_to_list()
 row_data = insert_blank_list(r)
-print(row_data)
+
+
 
 def write_csv():
-    with open("CSV_2.csv", "w", encoding="utf-8", newline="") as f:
+    with open(new_file_name(file, "_z.csv"), "w", encoding="utf-8", newline="") as f:
         FIRST_ROW_TECHNOKAD = ["Контур", "Префикс", "номера", "Номер", "Старый X", "Старый Y", "Новый X", "Новый Y",
                                "Метод определения",
                                "Формула", "Радиус", "Погрешность", "Описание закрепления"]
         SECOND_ROW_TECHNOKAD = ['' for i in FIRST_ROW_TECHNOKAD]
         data = [FIRST_ROW_TECHNOKAD, SECOND_ROW_TECHNOKAD]
         techno_data = [TechnokadRow(contour=row.contour, prefix_number="н", number=row.number, new_x=row.coord_x,
-                                    new_y=row.coord_y, inaccuracy="0,1", description="626003000000").attr_values_to_list for
+                                    new_y=row.coord_y, inaccuracy="0,1", description="626003000000").attr_values_to_list
+                       for
                        row in
                        row_data]
+        all_data = data + techno_data
         writer = csv.writer(f, delimiter=';')
-        writer.writerows(data)
+        writer.writerows(all_data)
+
+
+write_csv()
