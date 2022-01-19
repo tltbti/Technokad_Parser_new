@@ -1,7 +1,8 @@
 import csv
 import os.path
 
-file = r"D:\!Python_test\!Ready\Parser for technokad\coord.txt"
+# file = r"D:\!Python_test\!Ready\Parser for technokad\coord.txt"
+file = r".\examples\coord.txt"
 
 
 class TechnokadRow:
@@ -128,24 +129,37 @@ def insert_blank_list(data_list: [object]) -> list:
     return data_list
 
 
-r = read_from_file_to_list()
-row_data = insert_blank_list(r)
+row_data = read_from_file_to_list()
 
+
+# row_data = insert_blank_list(r)
+
+def prepare_data() -> list:
+    """
+    for prepare data to write in file
+    :return: list
+    """
+    FIRST_ROW_TECHNOKAD = ["Контур", "Префикс", "номера", "Номер", "Старый X", "Старый Y", "Новый X", "Новый Y",
+                           "Метод определения",
+                           "Формула", "Радиус", "Погрешность", "Описание закрепления"]
+    # непонятно почему, но у технокада для 12 элементов, только 11 ";", поэтому
+    # SECOND_ROW_TECHNOKAD имеет 11, а не 12 пробелов.
+    # Пробелы потом конвертируются в ";", через библиотеку csv, в функции write_csv (параметр delimeter).
+    SECOND_ROW_TECHNOKAD = ['' for _ in FIRST_ROW_TECHNOKAD][:-1]
+    data = [FIRST_ROW_TECHNOKAD, SECOND_ROW_TECHNOKAD]
+    techno_data = [TechnokadRow(contour=row.contour, prefix_number="н", number=row.number, new_x=row.coord_x,
+                                new_y=row.coord_y, inaccuracy="0,1", description="626003000000").attr_values_to_list
+                   for
+                   row in
+                   row_data]
+    all_data = data + techno_data
+    return all_data
 
 
 def write_csv():
-    with open(new_file_name(file, "_z.csv"), "w", encoding="utf-8", newline="") as f:
-        FIRST_ROW_TECHNOKAD = ["Контур", "Префикс", "номера", "Номер", "Старый X", "Старый Y", "Новый X", "Новый Y",
-                               "Метод определения",
-                               "Формула", "Радиус", "Погрешность", "Описание закрепления"]
-        SECOND_ROW_TECHNOKAD = ['' for i in FIRST_ROW_TECHNOKAD]
-        data = [FIRST_ROW_TECHNOKAD, SECOND_ROW_TECHNOKAD]
-        techno_data = [TechnokadRow(contour=row.contour, prefix_number="н", number=row.number, new_x=row.coord_x,
-                                    new_y=row.coord_y, inaccuracy="0,1", description="626003000000").attr_values_to_list
-                       for
-                       row in
-                       row_data]
-        all_data = data + techno_data
+    new_name = new_file_name(file, "_z.csv")
+    with open(new_name, "w", encoding="utf-8", newline="") as f:
+        all_data = prepare_data()
         writer = csv.writer(f, delimiter=';')
         writer.writerows(all_data)
 
