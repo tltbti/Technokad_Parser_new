@@ -1,12 +1,10 @@
 import csv
 import os.path
 
-# file = r"D:\!Python_test\!Ready\Parser for technokad\coord.txt"
-file = r"../examples/coord2.txt"
-file = r"M:\Материалы_Заказчиков\НПО Лавочкина Химки\геодезия\готовая\корпус22.txt"
+file = r"M:\Материалы_Заказчиков\НПО Лавочкина Химки\геодезия\готовая\корпус 43.txt"
 
 
-class TechnokadRow:
+class TechnokadRowZemlepolizovanie:
     """
     Класс для строки Технокада, в соответствии с ней будет создаваться csv файл
     """
@@ -45,7 +43,7 @@ class TechnokadRow:
         return [value for value in self.__dict__.values()]
 
 
-class MyRow:
+class OurRow:
     """
     класс строки из МЕНЮГЕО от геодезистов, в таком виде они выгружают координаты
     :param self.number: номер координаты
@@ -61,7 +59,7 @@ class MyRow:
         self.name = name
         self.coord_x = str(round(float(coord_x), 2))
         self.coord_y = str(round(float(coord_y), 2))
-        self.contour = f"[{contour.split('/')[0]}]"
+        self.contour = f"{contour.split('/')[0]}"
         self.type = type
 
     def __repr__(self):
@@ -94,7 +92,7 @@ def get_add_extension_to_file_name(path_to_file: str, new_name_with_extension: s
     return os.path.join(parent_dir, new_name)
 
 
-def read_from_file_to_list(path_to_file: str = file, skip_first_row: bool = True) -> [object]:
+def read_from_file_to_list(path_to_file: str = file, skip_first_row: bool = False) -> [object]:
     """
     Read data from text file with coordinates and return list with rows
     :param path_to_file: path to the file
@@ -109,35 +107,32 @@ def read_from_file_to_list(path_to_file: str = file, skip_first_row: bool = True
                 if enum == 1:  # skip the first row
                     continue
                 else:
-                    delete_n = str(i).rstrip()  # delete /n
+                    delete_n = str(i).rstrip()  # delete \n
                     split_by = delete_n.split(";")
-                    row_list.append(MyRow(*split_by))
+                    row_list.append(OurRow(*split_by))
             else:
                 delete_n = str(i).rstrip()
                 split_by = delete_n.split(";")
-                row_list.append(MyRow(*split_by))
+                row_list.append(OurRow(*split_by))
 
     return row_list
 
 
-def select_type_file(select: int) -> list:
-    print("")
-
-def prepare_data(data_list: [object]=read_from_file_to_list()) -> [list]:
+def prepare_data(data_list: [object] = read_from_file_to_list()) -> [list]:
     """
     for prepare data to write in file
     :return: list
     """
-    FIRST_ROW_TECHNOKAD = ["Контур", "Префикс", "номера", "Номер", "Старый X", "Старый Y", "Новый X", "Новый Y",
+    FIRST_ROW_TECHNOKAD = ["Контур", "Префикс номера", "Номер", "Старый X", "Старый Y", "Новый X", "Новый Y",
                            "Метод определения",
                            "Формула", "Радиус", "Погрешность", "Описание закрепления"]
-    # непонятно почему, но у технокада для 12 элементов, только 11 ";", поэтому
-    # SECOND_ROW_TECHNOKAD имеет 11, а не 12 пробелов.
     # Пробелы потом конвертируются в ";", через библиотеку csv, в функции write_csv (параметр delimeter).
-    BLANK_ROW = ['' for _ in FIRST_ROW_TECHNOKAD][:-1]
+    BLANK_ROW = ['' for _ in FIRST_ROW_TECHNOKAD]
 
-    techno_data = [TechnokadRow(contour=row.contour, prefix_number="н", number=row.number, new_x=row.coord_x,
-                                new_y=row.coord_y, inaccuracy="0,1", description="626003000000") for row in data_list]
+    techno_data = [
+        TechnokadRowZemlepolizovanie(contour=row.contour, prefix_number="н", number=row.name, new_x=row.coord_x,
+                                     new_y=row.coord_y, inaccuracy="0,1", description="626003000000") for row in
+        data_list]
 
     # вставляем разрывы между контурами
     current_contour = None
@@ -149,11 +144,11 @@ def prepare_data(data_list: [object]=read_from_file_to_list()) -> [list]:
     # десериализуем TechnoRow в строку
     new_techno_data = []
     for count, td in enumerate(techno_data):
-        if not isinstance(td, TechnokadRow):
+        if not isinstance(td, TechnokadRowZemlepolizovanie):
             new_techno_data.append(td)
         else:
-            _ = td.attr_values_to_list
-            new_techno_data.append(_)
+            i = td.attr_values_to_list
+            new_techno_data.append(i)
 
     return_data = []
     return_data.append(FIRST_ROW_TECHNOKAD)
@@ -166,6 +161,13 @@ def write_csv(data_list: list = prepare_data()):
     with open(new_name, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, delimiter=';')
         writer.writerows(data_list)
+        # эта хтонь была взята с благословленного стакоферфло
+        # writerow по умолчанию добавляет пустую строку в конец файла
+        # и чтобы избваиться от этого пришлось использовать данный хак
+        f.seek(0, os.SEEK_END)
+        f.seek(f.tell() - 2, os.SEEK_SET)
+        f.truncate()
 
 
-write_csv()
+if __name__ == '__main__':
+    write_csv()

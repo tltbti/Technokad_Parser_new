@@ -1,10 +1,52 @@
-file = r"D:\!Python_test\!Ready\Parser for technokad\coord.txt"
+import csv
+import os.path
 
-s = '1;1;418192.8660;1322826.4820;1/2;1'
+
+file = r"M:\Материалы_Заказчиков\НПО Лавочкина Химки\геодезия\готовая\корпус43а.txt"
+
+
+class TechnokadRow:
+    """
+    Класс для строки Технокада, в соответствии с ней будет создаваться csv файл
+    """
+
+    def __init__(self,
+                 contour: str = "",
+                 prefix_number: str = "",
+                 number: str = "",
+                 old_x: str = "",
+                 old_y: str = "",
+                 new_x: str = "",
+                 new_y: str = "",
+                 method: str = "",
+                 formula: str = "",
+                 radius: str = "",
+                 inaccuracy: str = "",
+                 description: str = ""):
+        self.contour = contour
+        self.prefix_number = prefix_number
+        self.number = number
+        self.old_x = old_x
+        self.old_y = old_y
+        self.new_x = new_x
+        self.new_y = new_y
+        self.method = method
+        self.formula = formula
+        self.radius = radius
+        self.inaccuracy = inaccuracy
+        self.description = description
+
+    def __repr__(self):
+        return f"TechnoRow({self.contour},{self.prefix_number},{self.number},{self.old_x},{self.old_y},{self.new_x},{self.new_y},{self.method},{self.formula},{self.radius},{self.inaccuracy},{self.description})"
+
+    @property
+    def attr_values_to_list(self):
+        return [value for value in self.__dict__.values()]
 
 
 class MyRow:
     """
+    класс строки из МЕНЮГЕО от геодезистов, в таком виде они выгружают координаты
     :param self.number: номер координаты
     :param name: имя координаты
     :param coord_x: координата х
@@ -13,12 +55,12 @@ class MyRow:
     :param type: тип контура (подземный, надземный)
     """
 
-    def __init__(self, number: str, name: str, coord_x: float, coord_y: float, contour: str, type: str):
+    def __init__(self, number: str, name: str, coord_x: str, coord_y: str, contour: str, type: str):
         self.number = number
         self.name = name
-        self.coord_x = round(float(coord_x), 2)
-        self.coord_y = round(float(coord_y), 2)
-        self.contour = f"[{contour.split('/')[0]}]"
+        self.coord_x = str(round(float(coord_x), 2))
+        self.coord_y = str(round(float(coord_y), 2))
+        self.contour = f"{contour.split('/')[0]}"
         self.type = type
 
     def __repr__(self):
@@ -28,191 +70,109 @@ class MyRow:
         return f"{self.number};{self.name};{self.coord_x};{self.coord_y};{self.contour};{self.type}"
 
     @property
-    def row_all(self):
-        return f"{self.number};{self.name};{self.coord_x};{self.coord_y};{self.contour};{self.type}\n"
+    def get_semicolon_string(self) -> str:
+        return ";".join(['' for value in self.__dict__.values()])
+
+    @property
+    def get_blank_str(self) -> list:
+        return ['' for value in self.__dict__.values()]
 
 
-def read_from_file_to_list(path_to_file: str = file, skip: bool = True) -> list:
+def get_add_extension_to_file_name(path_to_file: str, new_name_with_extension: str) -> str:
+    """
+    :param path_to_file: path to file
+    :param new_name_with_extension: file mask with extension will be added to end of filename
+    :return: full path to file in string
+    example new_file_name("D:\!Python_test\!Ready\Parser for technokad\coord.txt", "_2.csv")\n
+    -> "D:\!Python_test\!Ready\Parser for technokad\coord_2.csv"
+    """
+    old_file_name = os.path.basename(path_to_file)
+    old_file_name_without_extension = old_file_name.split(".")[0]
+    new_name = old_file_name_without_extension + new_name_with_extension
+    parent_dir = os.path.dirname(path_to_file)
+    return os.path.join(parent_dir, new_name)
+
+def read_from_file_to_list(path_to_file: str = file, skip_first_row: bool = False) -> [object]:
     """
     Read data from text file with coordinates and return list with rows
     :param path_to_file: path to the file
-    :param skip: skip or not the first row. By default, will be skipped the first row.
+    :param skip_first_row: skip or not the first row. By default, will be skipped the first row.
     :return: list(CoordRow, CoordRow, ...)
     """
+
     row_list = []
     with open(path_to_file, "r", encoding="utf-8") as f:
         for enum, i in enumerate(f, 1):
-            if skip:
-                if enum == 1: # skip the first row
+            if skip_first_row:
+                if enum == 1:  # skip the first row
                     continue
                 else:
-                    delete_n = str(i).rstrip() # delete /n
+                    delete_n = str(i).rstrip()  # delete \n
                     split_by = delete_n.split(";")
                     row_list.append(MyRow(*split_by))
             else:
                 delete_n = str(i).rstrip()
                 split_by = delete_n.split(";")
                 row_list.append(MyRow(*split_by))
+
     return row_list
 
-row_data = read_from_file_to_list(file)
-
-print(row_data)
 
 
-filename_input = f"AAAA_исправленный2.txt"
-with open(filename_input, "w", encoding="utf-8") as file_w:
-    row_contour = None
-    for row in row_data:
-        if row_contour == row.contour:
-            file_w.write(row.row_all)
+def select_type_file(select: int) -> list:
+    print("")
+
+def prepare_data(data_list: [object]=read_from_file_to_list()) -> [list]:
+    """
+    for prepare data to write in file
+    :return: list
+    """
+    FIRST_ROW_TECHNOKAD = ["Контур", "Префикс номера", "Номер", "Старый X", "Старый Y", "Новый X", "Новый Y",
+                           "Метод определения",
+                           "Формула", "Радиус", "Погрешность", "Описание закрепления"]
+    # непонятно почему, но у технокада для 12 элементов, только 11 ";", поэтому
+    # SECOND_ROW_TECHNOKAD имеет 11, а не 12 пробелов.
+    # Пробелы потом конвертируются в ";", через библиотеку csv, в функции write_csv (параметр delimeter).
+    BLANK_ROW = ['' for _ in FIRST_ROW_TECHNOKAD]
+
+    techno_data = [TechnokadRow(contour=row.contour, prefix_number="н", number=row.name, new_x=row.coord_x,
+                                new_y=row.coord_y, inaccuracy="0,1", description="626003000000") for row in data_list]
+
+    # вставляем разрывы между контурами
+    current_contour = None
+    for count, td in enumerate(techno_data):
+        if td.contour != current_contour:
+            techno_data.insert(count, BLANK_ROW)
+            current_contour = td.contour
+
+    # десериализуем TechnoRow в строку
+    new_techno_data = []
+    for count, td in enumerate(techno_data):
+        if not isinstance(td, TechnokadRow):
+            new_techno_data.append(td)
         else:
-            file_w.write("\n")
-            file_w.write(row.row_all)
-        row_contour = row.contour
+            i = td.attr_values_to_list
+            new_techno_data.append(i)
+
+    return_data = []
+    return_data.append(FIRST_ROW_TECHNOKAD)
+    return_data = return_data + new_techno_data
+    return return_data
 
 
-def create_file(select_type_of_file: int) -> file:
-    """
-    Примеры csv-файлов взяты из раздела 3.2.17 (https://www.technokad.ru/support/faq/) с сайтса Технокада
-    https://www.technokad.ru/upload/www/files/faq/3.2.17.zip
-
-    1 -  Землепользование
-    2 -  Многоконтурный земельный участок
-    3 -  Добавление внутреннего контура смежного ЗУ
-    4 -  Добавление нескольких внутренних контуров смежного ЗУ
-    5 -  Землепользование с внутр контуром
-    6 -  Линии и окружности
-    7 -  Многоконтурный с внутренним контуром
-    8 -  При кадастровой ошибке
-    9 -  Разветвленный контур
-    10 - Удаление контура МЗУ
-    11 - Уточнение контура МЗУ с удалением контуров и образованием новых
-    12 - Уточнение фрагмента
-    :param select_type_of_file:
-    :return: call a function and create file
-    """
-    type_of_files = {
-        1: file_1_zemlepolizovanie(),
-        2: file_2_mnogokonturnyj_zemelnyj_uchastok(),
-        3: file_3_dobavlenie_vnutrennego_kontura_smezhnogo_zu(),
-        4: file_4_dobavlenie_neskolkih_vnutrennih_konturov_smezhnogo_zu(),
-        5: file_5_zemlepolzovanie_s_vnutrennim_konturom(),
-        6: file_6_linii_i_okruzhnosti(),
-        7: file_7_mnogokonturnyj_s_vnutrennim_konturom(),
-        8: file_8_pri_kadastrovoj_oshibke(),
-        9: file_9_razvetvlennyj_kontur(),
-        10: file_10_udalenie_kontura_mzu(),
-        11: file_11_utochnenie_kontura_mzu_s_udaleniem_konturov_i_obrazovaniem_novyh(),
-        12: file_12_utochnenie_fragmenta()
-    }
-    return type_of_files[select_type_of_file]
 
 
-def file_1_zemlepolizovanie(filename: str = "тест") -> file:
-    """
-    Создает файл землепользование
-    :return:
-    """
-    filename = f"{filename}_землепользование"
-    with open(filename_input, "w", encoding="utf-8") as f:
-        row_contour = None
-        first_string = "Контур;Префикс номера;Номер;Старый X;Старый Y;Новый X;Новый Y;Метод определения;Формула;Радиус;Погрешность;Описание закрепления\n"
-        second_string = ";;;;;;;;;;;"
-        f.write(first_string)
-        f.write(second_string)
-        for row in row_data:
-            if row_contour == row.contour:
-                f.write(row.row_all)
-            else:
-                f.write("\n")
-                f.write(row.row_all)
-            row_contour = row.contour
+def write_csv(data_list: list = prepare_data()):
+    new_name = get_add_extension_to_file_name(file, "_землепользование.csv")
+    with open(new_name, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, delimiter=';')
+        writer.writerows(data_list)
+        # эта хтонь была взята с благословленного стаковерфло
+        # writerow по умолчанию добавляет пустую строку в конец файла
+        # и чтобы избавиться от этого пришлось использовать данный хак
+        f.seek(0, os.SEEK_END)
+        f.seek(f.tell() - 2, os.SEEK_SET)
+        f.truncate()
 
 
-def file_2_mnogokonturnyj_zemelnyj_uchastok():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_3_dobavlenie_vnutrennego_kontura_smezhnogo_zu():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_4_dobavlenie_neskolkih_vnutrennih_konturov_smezhnogo_zu():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_5_zemlepolzovanie_s_vnutrennim_konturom():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_6_linii_i_okruzhnosti():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_7_mnogokonturnyj_s_vnutrennim_konturom():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_8_pri_kadastrovoj_oshibke():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_9_razvetvlennyj_kontur():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_10_udalenie_kontura_mzu():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_11_utochnenie_kontura_mzu_s_udaleniem_konturov_i_obrazovaniem_novyh():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
-
-
-def file_12_utochnenie_fragmenta():
-    """
-    Создает файл землепользование
-    :return:
-    """
-    pass
+write_csv()
